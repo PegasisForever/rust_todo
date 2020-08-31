@@ -1,0 +1,9 @@
+[package]
+name = "rust_todo"
+version = "0.1.0"
+authors = ["pegasis <admin@pegasis.site>"]
+edition = "2018"
+
+[dependencies]
+actix-web = "2.0"
+actix-rt = "1.0"

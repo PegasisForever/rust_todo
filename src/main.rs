@@ -12,7 +12,7 @@ extern crate serde;
 extern crate uuid;
 
 use actix_web::{web, App, HttpServer};
-use crate::api::{regi, login, list, add, toggle};
+use crate::api::{regi, login, list, add, toggle, remove};
 use crate::database::user_db::UserDB;
 use crate::database::session_db::SessionDB;
 use crate::database::todo_db::TodoDB;
@@ -37,6 +37,7 @@ async fn main() -> std::io::Result<()> {
             .service(list)
             .service(add)
             .service(toggle)
+            .service(remove)
     })
         .bind(SERVER_ADDRESS)?
         .run()

@@ -5,7 +5,7 @@ use crate::model::user::User;
 use crate::model::session::Session;
 use crate::database::session_db::SessionDB;
 use crate::database::todo_db::{TodoDBError, TodoDB};
-use crate::model::session_request::{SessionRequest, AddTodoRequest, ToggleTodoRequest};
+use crate::model::session_request::{SessionRequest, AddTodoRequest, ToggleTodoRequest, RemoveTodoRequest};
 use crate::model::todo::TodoItem;
 
 #[post("/regi")]
@@ -97,6 +97,28 @@ pub async fn toggle(session_db: web::Data<SessionDB>,
                 None => Err(error::ErrorForbidden("")),
                 Some(user) => {
                     todo_db.toggle_todo(&user, request.todo_id, request.completed);
+                    Ok(HttpResponse::build(StatusCode::OK).body(""))
+                }
+            }
+        } else {
+            Err(error::ErrorForbidden(""))
+        }
+    }
+}
+
+#[post("/remove")]
+pub async fn remove(session_db: web::Data<SessionDB>,
+                    todo_db: web::Data<TodoDB>,
+                    request: web::Json<RemoveTodoRequest>,
+) -> actix_web::Result<HttpResponse> {
+    let session_id = request.session_id;
+    match session_db.find(&session_id) {
+        None => Err(error::ErrorForbidden("")),
+        Some(session) => if session.is_valid() {
+            match session.user.upgrade() {
+                None => Err(error::ErrorForbidden("")),
+                Some(user) => {
+                    todo_db.remove_todo(&user, request.todo_id);
                     Ok(HttpResponse::build(StatusCode::OK).body(""))
                 }
             }

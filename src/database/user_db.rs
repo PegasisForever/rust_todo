@@ -27,11 +27,12 @@ impl UserDB {
         }
     }
 
-    pub fn add(self: &UserDB, user: User) -> Result<(), UserDBError> {
+    pub fn add(self: &UserDB, user: User) -> Result<Arc<User>, UserDBError> {
         match self.find(&user.name) {
             None => {
-                self.list.lock().unwrap().push(Arc::new(user));
-                Ok(())
+                let arc = Arc::new(user);
+                self.list.lock().unwrap().push(arc.clone());
+                Ok(arc)
             }
             Some(_) => {
                 Err(UserDBError::UserExists)

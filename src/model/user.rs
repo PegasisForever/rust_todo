@@ -1,5 +1,3 @@
-extern crate serde;
-
 use serde::Deserialize;
 use std::hash::Hasher;
 

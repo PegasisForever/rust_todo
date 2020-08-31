@@ -20,6 +20,11 @@ impl TodoDB {
         }
     }
 
+    pub fn regi_user(self: &Self, user: Arc<User>) {
+        let mut list = self.list.lock().unwrap();
+        list.insert(user, vec![]);
+    }
+
     pub fn add_todo(self: &Self, user: &User, todo_item: TodoItem) -> Result<(), TodoDBError> {
         match self.list.lock().unwrap().get_mut(user) {
             None => Err(TodoDBError::UserDoesntExist),

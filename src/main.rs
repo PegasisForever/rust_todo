@@ -5,10 +5,12 @@ mod model;
 #[macro_use]
 extern crate actix_web;
 
+extern crate serde;
+
 extern crate uuid;
 
 use actix_web::{web, App, HttpServer};
-use crate::api::{regi, login};
+use crate::api::{regi, login, list};
 use crate::database::user_db::UserDB;
 use crate::database::session_db::SessionDB;
 use crate::database::todo_db::TodoDB;
@@ -30,6 +32,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(todo_db.clone())
             .service(regi)
             .service(login)
+            .service(list)
     })
         .bind(SERVER_ADDRESS)?
         .run()

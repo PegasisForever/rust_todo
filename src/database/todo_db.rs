@@ -3,11 +3,21 @@ use std::sync::{Mutex, Arc, Weak};
 use crate::model::user::User;
 use crate::model::todo::TodoItem;
 use uuid::Uuid;
+use std::fmt::Formatter;
 
+#[derive(Debug)]
 pub enum TodoDBError {
     UserDoesntExist,
     TodoItemDoesntExist,
 }
+
+impl std::fmt::Display for TodoDBError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl std::error::Error for TodoDBError {}
 
 pub struct TodoDB {
     pub list: Mutex<WeakKeyHashMap<Weak<User>, Vec<TodoItem>>>

@@ -7,6 +7,7 @@ use crate::database::session_db::SessionDB;
 use crate::database::todo_db::{TodoDB};
 use crate::model::session_request::{SessionRequest, AddTodoRequest, ToggleTodoRequest, RemoveTodoRequest};
 use crate::model::todo::TodoItem;
+use serde::export::Formatter;
 
 #[post("/regi")]
 pub async fn regi(db: web::Data<UserDB>, todo_db: web::Data<TodoDB>, user: web::Json<User>) -> actix_web::Result<HttpResponse> {
@@ -37,8 +38,15 @@ pub async fn login(user_db: web::Data<UserDB>, session_db: web::Data<SessionDB>,
 #[derive(Debug)]
 pub enum ServerError {
     InvalidSession,
-    InternalError(InternalError),
+    InternalError(Box<dyn std::error::Error>),
 }
+
+macro_rules! new_internal_error {
+    ($expression:expr) => {
+        ServerError::InternalError(Box::new($expression))
+    };
+}
+
 
 #[derive(Debug)]
 pub enum InternalError {
@@ -47,6 +55,14 @@ pub enum InternalError {
     CannotFindTodoList,
 }
 
+impl std::fmt::Display for InternalError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl std::error::Error for InternalError {}
+
 pub async fn _list(session_db: web::Data<SessionDB>,
                    todo_db: web::Data<TodoDB>,
                    request: web::Json<SessionRequest>,
@@ -54,12 +70,12 @@ pub async fn _list(session_db: web::Data<SessionDB>,
     let session = session_db.find(&request.session_id)
         .ok_or(ServerError::InvalidSession)?;
     let user = session.user.upgrade()
-        .ok_or(ServerError::InternalError(InternalError::CannotUpgradeUser))?;
+        .ok_or(new_internal_error!(InternalError::CannotUpgradeUser))?;
 
     let all_todo_list = todo_db.list.lock()
-        .map_err(|_| { ServerError::InternalError(InternalError::CannotGetLock) })?;
+        .map_err(|_| { new_internal_error!(InternalError::CannotGetLock) })?;
     let todo_list = all_todo_list.get(&user)
-        .ok_or(ServerError::InternalError(InternalError::CannotFindTodoList))?;
+        .ok_or(new_internal_error!(InternalError::CannotFindTodoList))?;
     Ok(format!("{:?}", todo_list))
 }
 
@@ -82,11 +98,12 @@ pub async fn _add(session_db: web::Data<SessionDB>,
     let session = session_db.find(&request.session_id)
         .ok_or(ServerError::InvalidSession)?;
     let user = session.user.upgrade()
-        .ok_or(ServerError::InternalError(InternalError::CannotUpgradeUser))?;
+        .ok_or(new_internal_error!(InternalError::CannotUpgradeUser))?;
 
     let todo_item = TodoItem::new(&*request.todo_name);
     let response = todo_item.id.to_string();
-    todo_db.add_todo(&user, todo_item); //TODO handle error
+    todo_db.add_todo(&user, todo_item)
+        .map_err(|err| { new_internal_error!(err) })?;
     Ok(response)
 }
 

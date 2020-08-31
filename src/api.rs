@@ -4,7 +4,7 @@ use crate::database::user_db::{UserDB, UserDBError};
 use crate::model::user::User;
 use crate::model::session::Session;
 use crate::database::session_db::SessionDB;
-use crate::database::todo_db::{TodoDBError, TodoDB};
+use crate::database::todo_db::{TodoDB};
 use crate::model::session_request::{SessionRequest, AddTodoRequest, ToggleTodoRequest, RemoveTodoRequest};
 use crate::model::todo::TodoItem;
 

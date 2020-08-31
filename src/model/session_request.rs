@@ -1,7 +1,5 @@
 use uuid::Uuid;
-use serde::{Deserialize, Deserializer};
-use crate::model::todo::TodoItem;
-
+use serde::{Deserialize};
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct SessionRequest {

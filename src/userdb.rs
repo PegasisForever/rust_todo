@@ -3,19 +3,10 @@ extern crate serde;
 use std::sync::Mutex;
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct User {
     name: String,
     password: String,
-}
-
-impl Clone for User {
-    fn clone(&self) -> Self {
-        User {
-            name: self.name.clone(),
-            password: self.password.clone(),
-        }
-    }
 }
 
 pub struct UserDB {
@@ -42,13 +33,11 @@ impl UserDB {
     }
 
     pub fn find(self: &UserDB, name: &str) -> Option<User> {
-        let user = self.list.lock().unwrap()
+        self.list.lock().unwrap()
             .iter()
             .find(|user| {
                 user.name == name
-            })?
-            .clone();
-
-        Some(user)
+            })
+            .map(|user| { user.clone() })
     }
 }

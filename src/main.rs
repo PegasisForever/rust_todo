@@ -1,11 +1,16 @@
+mod userdb;
+
 #[macro_use]
 extern crate actix_web;
 
-use actix_web::{web, App, HttpServer, Responder, HttpRequest, HttpResponse, Result};
-use actix_web::http::{header, Method, StatusCode};
+use actix_web::{web, App, HttpServer, HttpRequest, HttpResponse, Result};
+use actix_web::http::{StatusCode};
+use userdb::{UserDB, User};
 
 #[get("/regi")]
-async fn welcome(req: HttpRequest) -> Result<HttpResponse> {
+async fn regi(req: HttpRequest, db: web::Data<UserDB>) -> Result<HttpResponse> {
+    println!("{:?}", db.size());
+    db.add(User::new("awa".into(), "Awa".into()));
 
     Ok(HttpResponse::build(StatusCode::OK)
         .content_type("text/html; charset=utf-8")
@@ -14,9 +19,12 @@ async fn welcome(req: HttpRequest) -> Result<HttpResponse> {
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
-    HttpServer::new(|| {
+    let user_db = web::Data::new(UserDB::get());
+
+    HttpServer::new(move || {
         App::new()
-            .service(welcome)
+            .app_data(user_db.clone())
+            .service(regi)
     })
         .bind("0.0.0.0:8001")?
         .run()

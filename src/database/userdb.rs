@@ -1,31 +1,26 @@
-extern crate serde;
+
 
 use std::fmt;
 use std::sync::Mutex;
-use serde::Deserialize;
-use self::serde::export::Formatter;
+use crate::model::user::User;
+use std::fmt::Formatter;
 
-#[derive(Debug, Deserialize, Clone)]
-pub struct User {
-    name: String,
-    password: String,
+
+#[derive(Debug)]
+pub enum UserDBError {
+    UserExists,
+}
+
+impl fmt::Display for UserDBError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            UserDBError::UserExists => write!(f, "User already exists")
+        }
+    }
 }
 
 pub struct UserDB {
     list: Mutex<Vec<User>>
-}
-
-#[derive(Debug)]
-pub enum DBError {
-    UserExists,
-}
-
-impl fmt::Display for DBError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            DBError::UserExists => write!(f, "User already exists")
-        }
-    }
 }
 
 impl UserDB {
@@ -35,14 +30,14 @@ impl UserDB {
         }
     }
 
-    pub fn add(self: &UserDB, user: User) -> Result<(), DBError> {
+    pub fn add(self: &UserDB, user: User) -> Result<(), UserDBError> {
         match self.find(&user.name) {
             None => {
                 self.list.lock().unwrap().push(user);
                 Ok(())
             }
             Some(_) => {
-                Err(DBError::UserExists)
+                Err(UserDBError::UserExists)
             }
         }
     }

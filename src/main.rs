@@ -1,19 +1,13 @@
-mod userdb;
+mod api;
+mod database;
+mod model;
 
 #[macro_use]
 extern crate actix_web;
 
-use actix_web::{web, error, App, HttpServer, HttpResponse};
-use actix_web::http::{StatusCode};
-use userdb::{UserDB, User, DBError};
-
-#[post("/regi")]
-async fn regi(db: web::Data<UserDB>, user: web::Json<User>) -> actix_web::Result<HttpResponse> {
-    match db.add(user.0) {
-        Ok(_) => Ok(HttpResponse::build(StatusCode::OK).body("")),
-        Err(DBError::UserExists) => Err(error::ErrorConflict(DBError::UserExists))
-    }
-}
+use actix_web::{web, App, HttpServer};
+use crate::api::regi;
+use crate::database::userdb::UserDB;
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {

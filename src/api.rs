@@ -43,6 +43,7 @@ pub enum ServerError {
 #[derive(Debug)]
 pub enum InternalError {
     CannotGetLock,
+    CannotUpgradeUser,
     CannotFindTodoList,
 }
 
@@ -50,10 +51,10 @@ pub async fn _list(session_db: web::Data<SessionDB>,
                    todo_db: web::Data<TodoDB>,
                    request: web::Json<SessionRequest>,
 ) -> Result<String, ServerError> {
-    let session_id = request.session_id;
-    let session = session_db.find(&session_id).ok_or(ServerError::InvalidSession)?;
-    if !session.is_valid() { return Err(ServerError::InvalidSession); }
-    let user = session.user.upgrade().ok_or(ServerError::InvalidSession)?;
+    let session = session_db.find(&request.session_id)
+        .ok_or(ServerError::InvalidSession)?;
+    let user = session.user.upgrade()
+        .ok_or(ServerError::InternalError(InternalError::CannotUpgradeUser))?;
 
     let all_todo_list = todo_db.list.lock()
         .map_err(|_| { ServerError::InternalError(InternalError::CannotGetLock) })?;
@@ -74,27 +75,30 @@ pub async fn list(session_db: web::Data<SessionDB>,
     }
 }
 
+pub async fn _add(session_db: web::Data<SessionDB>,
+                  todo_db: web::Data<TodoDB>,
+                  request: web::Json<AddTodoRequest>,
+) -> Result<String, ServerError> {
+    let session = session_db.find(&request.session_id)
+        .ok_or(ServerError::InvalidSession)?;
+    let user = session.user.upgrade()
+        .ok_or(ServerError::InternalError(InternalError::CannotUpgradeUser))?;
+
+    let todo_item = TodoItem::new(&*request.todo_name);
+    let response = todo_item.id.to_string();
+    todo_db.add_todo(&user, todo_item); //TODO handle error
+    Ok(response)
+}
+
 #[post("/add")]
 pub async fn add(session_db: web::Data<SessionDB>,
                  todo_db: web::Data<TodoDB>,
                  request: web::Json<AddTodoRequest>,
 ) -> actix_web::Result<HttpResponse> {
-    let session_id = request.session_id;
-    match session_db.find(&session_id) {
-        None => Err(error::ErrorForbidden("")),
-        Some(session) => if session.is_valid() {
-            match session.user.upgrade() {
-                None => Err(error::ErrorForbidden("")),
-                Some(user) => {
-                    let todo_item = TodoItem::new(&*request.todo_name);
-                    let response = todo_item.id.to_string();
-                    todo_db.add_todo(&user, todo_item);
-                    Ok(HttpResponse::build(StatusCode::OK).body(response))
-                }
-            }
-        } else {
-            Err(error::ErrorForbidden(""))
-        }
+    match _add(session_db, todo_db, request).await {
+        Ok(response) => Ok(HttpResponse::build(StatusCode::OK).body(response)),
+        Err(ServerError::InvalidSession) => Err(error::ErrorForbidden("")),
+        Err(ServerError::InternalError(err)) => Err(error::ErrorInternalServerError(format!("{:?}", err))),
     }
 }
 

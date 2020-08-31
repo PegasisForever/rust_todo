@@ -7,7 +7,7 @@ pub struct SessionDB {
 }
 
 impl SessionDB {
-    pub fn get() -> Self {
+    pub fn new() -> Self {
         Self {
             list: Mutex::new(vec![]),
         }
@@ -23,6 +23,7 @@ impl SessionDB {
             .find(|session| {
                 session.id == *id
             })
+            .filter(|session| { session.is_valid() })
             .map(|session| { session.clone() })
     }
 }

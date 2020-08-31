@@ -21,7 +21,7 @@ pub struct UserDB {
 }
 
 impl UserDB {
-    pub fn get() -> UserDB {
+    pub fn new() -> UserDB {
         UserDB {
             list: Mutex::new(vec![]),
         }

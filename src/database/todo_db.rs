@@ -14,7 +14,7 @@ pub struct TodoDB {
 }
 
 impl TodoDB {
-    pub fn get() -> Self {
+    pub fn new() -> Self {
         Self {
             list: Mutex::new(WeakKeyHashMap::new()),
         }

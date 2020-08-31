@@ -23,9 +23,9 @@ const SERVER_ADDRESS: &str = "0.0.0.0:8001";
 async fn main() -> std::io::Result<()> {
     println!("Starting server at http://{}.", SERVER_ADDRESS);
 
-    let user_db = web::Data::new(UserDB::get());
-    let session_db = web::Data::new(SessionDB::get());
-    let todo_db = web::Data::new(TodoDB::get());
+    let user_db = web::Data::new(UserDB::new());
+    let session_db = web::Data::new(SessionDB::new());
+    let todo_db = web::Data::new(TodoDB::new());
 
     HttpServer::new(move || {
         App::new()

@@ -1,16 +1,19 @@
-use std::sync::Mutex;
+extern crate serde;
 
-#[derive(Debug)]
+use std::sync::Mutex;
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize)]
 pub struct User {
     name: String,
     password: String,
 }
 
-impl User {
-    pub fn new(name: String, password: String) -> User {
+impl Clone for User {
+    fn clone(&self) -> Self {
         User {
-            name,
-            password,
+            name: self.name.clone(),
+            password: self.password.clone(),
         }
     }
 }
@@ -26,11 +29,26 @@ impl UserDB {
         }
     }
 
-    pub fn size(self: &UserDB) -> usize {
-        self.list.lock().unwrap().len()
+    pub fn add(self: &UserDB, user: User) -> Result<(), String> {
+        match self.find(&user.name) {
+            None => {
+                self.list.lock().unwrap().push(user);
+                Ok(())
+            }
+            Some(_) => {
+                Err("User already existed".into())
+            }
+        }
     }
 
-    pub fn add(self: &UserDB, user: User) {
-        self.list.lock().unwrap().push(user);
+    pub fn find(self: &UserDB, name: &str) -> Option<User> {
+        let user = self.list.lock().unwrap()
+            .iter()
+            .find(|user| {
+                user.name == name
+            })?
+            .clone();
+
+        Some(user)
     }
 }

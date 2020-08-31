@@ -3,18 +3,21 @@ mod userdb;
 #[macro_use]
 extern crate actix_web;
 
-use actix_web::{web, App, HttpServer, HttpRequest, HttpResponse, Result};
+use actix_web::{web, App, HttpServer, HttpResponse};
 use actix_web::http::{StatusCode};
 use userdb::{UserDB, User};
 
-#[get("/regi")]
-async fn regi(req: HttpRequest, db: web::Data<UserDB>) -> Result<HttpResponse> {
-    println!("{:?}", db.size());
-    db.add(User::new("awa".into(), "Awa".into()));
-
-    Ok(HttpResponse::build(StatusCode::OK)
-        .content_type("text/html; charset=utf-8")
-        .body("awa"))
+//TODO proper error handling
+#[post("/regi")]
+async fn regi(db: web::Data<UserDB>, user: web::Json<User>) -> actix_web::Result<HttpResponse> {
+    match db.add(user.0) {
+        Ok(_) => {
+            Ok(HttpResponse::build(StatusCode::OK).body(""))
+        }
+        Err(message) => {
+            Ok(HttpResponse::build(StatusCode::BAD_REQUEST).body(message))
+        }
+    }
 }
 
 #[actix_rt::main]

@@ -1,7 +1,5 @@
-
-
 use std::fmt;
-use std::sync::Mutex;
+use std::sync::{Mutex, Arc,Weak};
 use crate::model::user::User;
 use std::fmt::Formatter;
 
@@ -20,7 +18,7 @@ impl fmt::Display for UserDBError {
 }
 
 pub struct UserDB {
-    list: Mutex<Vec<User>>
+    list: Mutex<Vec<Arc<User>>>
 }
 
 impl UserDB {
@@ -33,7 +31,7 @@ impl UserDB {
     pub fn add(self: &UserDB, user: User) -> Result<(), UserDBError> {
         match self.find(&user.name) {
             None => {
-                self.list.lock().unwrap().push(user);
+                self.list.lock().unwrap().push(Arc::new(user));
                 Ok(())
             }
             Some(_) => {
@@ -42,12 +40,12 @@ impl UserDB {
         }
     }
 
-    pub fn find(self: &UserDB, name: &str) -> Option<User> {
+    pub fn find(self: &UserDB, name: &str) -> Option<Weak<User>> {
         self.list.lock().unwrap()
             .iter()
             .find(|user| {
                 user.name == name
             })
-            .map(|user| { user.clone() })
+            .map(|user| { Arc::downgrade(user) })
     }
 }

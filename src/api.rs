@@ -14,7 +14,7 @@ pub async fn regi(db: web::Data<UserDB>, user: web::Json<User>) -> actix_web::Re
 #[post("/login")]
 pub async fn login(db: web::Data<UserDB>, user: web::Json<User>) -> actix_web::Result<HttpResponse> {
     match db.find(&user.name) {
-        Some(found_user) => if user.password == found_user.password {
+        Some(found_user) => if user.password == found_user.upgrade().unwrap().password {
             Ok(HttpResponse::build(StatusCode::OK).body("some token"))
         } else {
             Err(error::ErrorForbidden(""))

@@ -1,3 +1,5 @@
+#![feature(in_band_lifetimes)]
+
 mod api;
 mod database;
 mod model;
@@ -10,7 +12,7 @@ extern crate serde;
 extern crate uuid;
 
 use actix_web::{web, App, HttpServer};
-use crate::api::{regi, login, list};
+use crate::api::{regi, login, list, add, toggle};
 use crate::database::user_db::UserDB;
 use crate::database::session_db::SessionDB;
 use crate::database::todo_db::TodoDB;
@@ -33,6 +35,8 @@ async fn main() -> std::io::Result<()> {
             .service(regi)
             .service(login)
             .service(list)
+            .service(add)
+            .service(toggle)
     })
         .bind(SERVER_ADDRESS)?
         .run()

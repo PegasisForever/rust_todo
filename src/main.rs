@@ -9,8 +9,12 @@ use actix_web::{web, App, HttpServer};
 use crate::api::{regi, login};
 use crate::database::userdb::UserDB;
 
+const SERVER_ADDRESS: &str = "0.0.0.0:8001";
+
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
+    println!("Starting server at http://{}.",SERVER_ADDRESS);
+
     let user_db = web::Data::new(UserDB::get());
 
     HttpServer::new(move || {
@@ -19,7 +23,11 @@ async fn main() -> std::io::Result<()> {
             .service(regi)
             .service(login)
     })
-        .bind("0.0.0.0:8001")?
+        .bind(SERVER_ADDRESS)?
         .run()
-        .await
+        .await?;
+
+    //todo save db
+    println!("Server exited.");
+    Ok(())
 }

@@ -1,8 +1,7 @@
 use std::fmt;
-use std::sync::{Mutex, Arc,Weak};
+use std::sync::{Mutex, Arc, Weak};
 use crate::model::user::User;
 use std::fmt::Formatter;
-
 
 #[derive(Debug)]
 pub enum UserDBError {

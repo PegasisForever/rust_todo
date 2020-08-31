@@ -5,21 +5,26 @@ mod model;
 #[macro_use]
 extern crate actix_web;
 
+extern crate uuid;
+
 use actix_web::{web, App, HttpServer};
 use crate::api::{regi, login};
-use crate::database::userdb::UserDB;
+use crate::database::user_db::UserDB;
+use crate::database::session_db::SessionDB;
 
 const SERVER_ADDRESS: &str = "0.0.0.0:8001";
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
-    println!("Starting server at http://{}.",SERVER_ADDRESS);
+    println!("Starting server at http://{}.", SERVER_ADDRESS);
 
     let user_db = web::Data::new(UserDB::get());
+    let session_db = web::Data::new(SessionDB::get());
 
     HttpServer::new(move || {
         App::new()
             .app_data(user_db.clone())
+            .app_data(session_db.clone())
             .service(regi)
             .service(login)
     })

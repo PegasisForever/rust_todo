@@ -12,3 +12,4 @@ codegen-units = 1
 actix-web = "2.0"
 actix-rt = "1.0"
 serde = "1.0.115"
+uuid = { version = "0.8.1", features = ["serde", "v4"] }

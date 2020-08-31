@@ -3,20 +3,15 @@ mod userdb;
 #[macro_use]
 extern crate actix_web;
 
-use actix_web::{web, App, HttpServer, HttpResponse};
+use actix_web::{web, error, App, HttpServer, HttpResponse};
 use actix_web::http::{StatusCode};
-use userdb::{UserDB, User};
+use userdb::{UserDB, User, DBError};
 
-//TODO proper error handling
 #[post("/regi")]
 async fn regi(db: web::Data<UserDB>, user: web::Json<User>) -> actix_web::Result<HttpResponse> {
     match db.add(user.0) {
-        Ok(_) => {
-            Ok(HttpResponse::build(StatusCode::OK).body(""))
-        }
-        Err(message) => {
-            Ok(HttpResponse::build(StatusCode::BAD_REQUEST).body(message))
-        }
+        Ok(_) => Ok(HttpResponse::build(StatusCode::OK).body("")),
+        Err(DBError::UserExists) => Err(error::ErrorConflict(DBError::UserExists))
     }
 }
 

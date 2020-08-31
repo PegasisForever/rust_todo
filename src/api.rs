@@ -34,29 +34,43 @@ pub async fn login(user_db: web::Data<UserDB>, session_db: web::Data<SessionDB>,
     }
 }
 
+#[derive(Debug)]
+pub enum ServerError {
+    InvalidSession,
+    InternalError(InternalError),
+}
+
+#[derive(Debug)]
+pub enum InternalError {
+    CannotGetLock,
+    CannotFindTodoList,
+}
+
+pub async fn _list(session_db: web::Data<SessionDB>,
+                   todo_db: web::Data<TodoDB>,
+                   request: web::Json<SessionRequest>,
+) -> Result<String, ServerError> {
+    let session_id = request.session_id;
+    let session = session_db.find(&session_id).ok_or(ServerError::InvalidSession)?;
+    if !session.is_valid() { return Err(ServerError::InvalidSession); }
+    let user = session.user.upgrade().ok_or(ServerError::InvalidSession)?;
+
+    let all_todo_list = todo_db.list.lock()
+        .map_err(|_| { ServerError::InternalError(InternalError::CannotGetLock) })?;
+    let todo_list = all_todo_list.get(&user)
+        .ok_or(ServerError::InternalError(InternalError::CannotFindTodoList))?;
+    Ok(format!("{:?}", todo_list))
+}
 
 #[post("/list")]
 pub async fn list(session_db: web::Data<SessionDB>,
                   todo_db: web::Data<TodoDB>,
                   request: web::Json<SessionRequest>,
 ) -> actix_web::Result<HttpResponse> {
-    let session_id = request.session_id;
-    match session_db.find(&session_id) {
-        None => Err(error::ErrorForbidden("")),
-        Some(session) => if session.is_valid() {
-            match session.user.upgrade() {
-                None => Err(error::ErrorForbidden("")),
-                Some(user) => {
-                    let temp = todo_db.list.lock().unwrap();
-                    let todo_list = temp
-                        .get(&user)
-                        .unwrap();
-                    Ok(HttpResponse::build(StatusCode::OK).body(format!("{:?}", todo_list)))
-                }
-            }
-        } else {
-            Err(error::ErrorForbidden(""))
-        }
+    match _list(session_db, todo_db, request).await {
+        Ok(response) => Ok(HttpResponse::build(StatusCode::OK).body(response)),
+        Err(ServerError::InvalidSession) => Err(error::ErrorForbidden("")),
+        Err(ServerError::InternalError(err)) => Err(error::ErrorInternalServerError(format!("{:?}", err))),
     }
 }
 

@@ -1,4 +1,5 @@
 #![feature(in_band_lifetimes)]
+#![feature(backtrace)]
 
 mod api;
 mod database;
@@ -6,11 +7,12 @@ mod model;
 
 #[macro_use]
 extern crate actix_web;
-
 extern crate serde;
-
+extern crate env_logger;
 extern crate uuid;
 
+use std::env;
+use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
 use crate::api::{regi, login, list, add, toggle, remove};
 use crate::database::user_db::UserDB;
@@ -21,6 +23,10 @@ const SERVER_ADDRESS: &str = "0.0.0.0:8001";
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
+    env::set_var("RUST_LOG", "actix_web=debug,actix_server=info");
+    env::set_var("RUST_BACKTRACE", "1");
+    env_logger::init();
+
     println!("Starting server at http://{}.", SERVER_ADDRESS);
 
     let user_db = web::Data::new(UserDB::new());

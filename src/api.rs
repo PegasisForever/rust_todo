@@ -8,6 +8,8 @@ use crate::database::todo_db::{TodoDB};
 use crate::model::session_request::{SessionRequest, AddTodoRequest, ToggleTodoRequest, RemoveTodoRequest};
 use crate::model::todo::TodoItem;
 use serde::export::Formatter;
+use std::backtrace::Backtrace;
+use std::error::Error;
 
 #[post("/regi")]
 pub async fn regi(db: web::Data<UserDB>, todo_db: web::Data<TodoDB>, user: web::Json<User>) -> actix_web::Result<HttpResponse> {
@@ -38,44 +40,70 @@ pub async fn login(user_db: web::Data<UserDB>, session_db: web::Data<SessionDB>,
 #[derive(Debug)]
 pub enum ServerError {
     InvalidSession,
-    InternalError(Box<dyn std::error::Error>),
+    InternalError {
+        error: Option<Box<dyn std::error::Error>>,
+        backtrace: Backtrace,
+    },
 }
 
-macro_rules! new_internal_error {
-    ($expression:expr) => {
-        ServerError::InternalError(Box::new($expression))
-    };
-}
-
-
-#[derive(Debug)]
-pub enum InternalError {
-    CannotGetLock,
-    CannotUpgradeUser,
-    CannotFindTodoList,
-}
-
-impl std::fmt::Display for InternalError {
+impl std::fmt::Display for ServerError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        match self {
+            ServerError::InvalidSession => write!(f, "{:?}", ServerError::InvalidSession),
+            ServerError::InternalError { backtrace, error } => {
+                if let Some(error) = error {
+                    write!(f, "{:?}\n{}", error, backtrace)
+                } else {
+                    write!(f, "Unspecified error\n{}", backtrace)
+                }
+            }
+        }
     }
 }
 
-impl std::error::Error for InternalError {}
+impl actix_web::error::ResponseError for ServerError {
+    fn status_code(&self) -> StatusCode {
+        match self {
+            ServerError::InvalidSession => StatusCode::UNAUTHORIZED,
+            ServerError::InternalError { error: _, backtrace: _ } => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+
+    fn error_response(&self) -> HttpResponse {
+        println!("{}",self);
+        HttpResponse::new(self.status_code())
+    }
+}
+
+macro_rules! new_internal_error {
+    () => {
+        ServerError::InternalError{
+            backtrace: Backtrace::capture(),
+            error: None,
+        }
+    };
+    ($expression:expr) => {
+        ServerError::InternalError{
+            backtrace: Backtrace::capture(),
+            error: Some(Box::new($expression)),
+        }
+    };
+}
 
 pub async fn _list(session_db: web::Data<SessionDB>,
                    todo_db: web::Data<TodoDB>,
                    request: web::Json<SessionRequest>,
 ) -> Result<String, ServerError> {
+    String::from("a").parse::<i32>().map_err(|err| { new_internal_error!(err) })?;
     let session = session_db.find(&request.session_id)
         .ok_or(ServerError::InvalidSession)?;
     let user = session.user.upgrade()
-        .ok_or(new_internal_error!(InternalError::CannotUpgradeUser))?;
+        .ok_or(new_internal_error!())?;
 
     let all_todo_list = todo_db.list.lock()
-        .map_err(|_| { new_internal_error!(InternalError::CannotGetLock) })?;
+        .map_err(|_| { new_internal_error!() })?;
     let todo_list = all_todo_list.get(&user)
-        .ok_or(new_internal_error!(InternalError::CannotFindTodoList))?;
+        .ok_or(new_internal_error!())?;
     Ok(format!("{:?}", todo_list))
 }
 
@@ -84,11 +112,17 @@ pub async fn list(session_db: web::Data<SessionDB>,
                   todo_db: web::Data<TodoDB>,
                   request: web::Json<SessionRequest>,
 ) -> actix_web::Result<HttpResponse> {
-    match _list(session_db, todo_db, request).await {
-        Ok(response) => Ok(HttpResponse::build(StatusCode::OK).body(response)),
-        Err(ServerError::InvalidSession) => Err(error::ErrorForbidden("")),
-        Err(ServerError::InternalError(err)) => Err(error::ErrorInternalServerError(format!("{:?}", err))),
-    }
+    String::from("a").parse::<i32>().map_err(|err| { new_internal_error!(err) })?;
+    let session = session_db.find(&request.session_id)
+        .ok_or(ServerError::InvalidSession)?;
+    let user = session.user.upgrade()
+        .ok_or(new_internal_error!())?;
+
+    let all_todo_list = todo_db.list.lock()
+        .map_err(|_| { new_internal_error!() })?;
+    let todo_list = all_todo_list.get(&user)
+        .ok_or(new_internal_error!())?;
+    Ok(HttpResponse::build(StatusCode::OK).body(format!("{:?}", todo_list)))
 }
 
 pub async fn _add(session_db: web::Data<SessionDB>,
@@ -98,12 +132,12 @@ pub async fn _add(session_db: web::Data<SessionDB>,
     let session = session_db.find(&request.session_id)
         .ok_or(ServerError::InvalidSession)?;
     let user = session.user.upgrade()
-        .ok_or(new_internal_error!(InternalError::CannotUpgradeUser))?;
+        .ok_or(new_internal_error!())?;
 
     let todo_item = TodoItem::new(&*request.todo_name);
     let response = todo_item.id.to_string();
     todo_db.add_todo(&user, todo_item)
-        .map_err(|err| { new_internal_error!(err) })?;
+        .map_err(|err| { new_internal_error!() })?;
     Ok(response)
 }
 
@@ -115,7 +149,15 @@ pub async fn add(session_db: web::Data<SessionDB>,
     match _add(session_db, todo_db, request).await {
         Ok(response) => Ok(HttpResponse::build(StatusCode::OK).body(response)),
         Err(ServerError::InvalidSession) => Err(error::ErrorForbidden("")),
-        Err(ServerError::InternalError(err)) => Err(error::ErrorInternalServerError(format!("{:?}", err))),
+        Err(ServerError::InternalError { backtrace, error }) => {
+            if let Some(error) = error {
+                println!("{:?}", error);
+            } else {
+                println!("Unspecified error")
+            }
+            println!("{}", backtrace);
+            Err(error::ErrorInternalServerError(""))
+        }
     }
 }
 

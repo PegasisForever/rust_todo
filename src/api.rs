@@ -94,15 +94,56 @@ macro_rules! new_internal_error {
 }
 
 macro_rules! unwrap {
-    ($expression:expr) => {
-        $expression.ok_or(new_internal_error!())
+    ($e:expr) => {
+        ServerUnwrap::without_error($e, ||{new_internal_error!()})
     };
-    (result, $expression:expr) => {
-        $expression.map_err(|err| { new_internal_error!(err) })
+    ($e:expr, $err:expr) => {
+        ServerUnwrap::without_error($e, ||{$err})
     };
-    (result_noerr, $expression:expr) => {
-        $expression.map_err(|_| { new_internal_error!() })
+}
+
+trait ServerUnwrap {
+    type Item;
+    fn without_error<F: FnOnce() -> ServerError>(self, error_fn: F) -> Result<Self::Item, ServerError>;
+}
+
+impl<T> ServerUnwrap for Option<T> {
+    type Item = T;
+
+    fn without_error<F: FnOnce() -> ServerError>(self, error_fn: F) -> Result<Self::Item, ServerError> {
+        self.ok_or_else(error_fn)
+    }
+}
+
+impl<T, E> ServerUnwrap for Result<T, E> {
+    type Item = T;
+
+    fn without_error<F: FnOnce() -> ServerError>(self, error_fn: F) -> Result<Self::Item, ServerError> {
+        self.map_err(|_| { error_fn() })
+    }
+}
+
+macro_rules! unwrap_err {
+    ($e:expr) => {
+        ServerUnwrapError::with_error($e)
     };
+}
+
+trait ServerUnwrapError {
+    type Item;
+    fn with_error(self) -> Result<Self::Item, ServerError>;
+}
+
+impl<T, E: 'static + std::error::Error> ServerUnwrapError for Result<T, E> {
+    type Item = T;
+
+    fn with_error(self) -> Result<Self::Item, ServerError> {
+        self.map_err(|err| { new_internal_error!(err) })
+    }
+}
+
+fn ok_response<B: Into<actix_web::body::Body>>(body: B) -> actix_web::Result<HttpResponse> {
+    Ok(HttpResponse::build(StatusCode::OK).body(body))
 }
 
 #[post("/list")]
@@ -110,27 +151,25 @@ pub async fn list(session_db: web::Data<SessionDB>,
                   todo_db: web::Data<TodoDB>,
                   request: web::Json<SessionRequest>,
 ) -> actix_web::Result<HttpResponse> {
-    let session = unwrap!(session_db.find(&request.session_id))?;
+    let session = unwrap!(session_db.find(&request.session_id), ServerError::InvalidSession)?;
     let user = unwrap!(session.user.upgrade())?;
 
-    let all_todo_list = unwrap!(result_noerr, todo_db.list.lock())?;
+    let all_todo_list = unwrap!(todo_db.list.lock())?;
     let todo_list = unwrap!(all_todo_list.get(&user))?;
-    Ok(HttpResponse::build(StatusCode::OK).body(format!("{:?}", todo_list)))
+
+    ok_response(format!("{:?}", todo_list))
 }
 
 pub async fn _add(session_db: web::Data<SessionDB>,
                   todo_db: web::Data<TodoDB>,
                   request: web::Json<AddTodoRequest>,
 ) -> Result<String, ServerError> {
-    let session = session_db.find(&request.session_id)
-        .ok_or(ServerError::InvalidSession)?;
-    let user = session.user.upgrade()
-        .ok_or(new_internal_error!())?;
+    let session = unwrap!(session_db.find(&request.session_id), ServerError::InvalidSession)?;
+    let user = unwrap!(session.user.upgrade())?;
 
     let todo_item = TodoItem::new(&*request.todo_name);
     let response = todo_item.id.to_string();
-    todo_db.add_todo(&user, todo_item)
-        .map_err(|err| { new_internal_error!(err) })?;
+    unwrap_err!(todo_db.add_todo(&user, todo_item))?;
     Ok(response)
 }
 

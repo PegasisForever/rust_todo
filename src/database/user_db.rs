@@ -16,6 +16,8 @@ impl fmt::Display for UserDBError {
     }
 }
 
+impl std::error::Error for UserDBError {}
+
 pub struct UserDB {
     list: Mutex<Vec<Arc<User>>>
 }

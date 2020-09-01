@@ -1,6 +1,6 @@
-use actix_web::{web, error, HttpResponse};
+use actix_web::{web, HttpResponse};
 use actix_web::http::{StatusCode};
-use crate::database::user_db::{UserDB, UserDBError};
+use crate::database::user_db::UserDB;
 use crate::model::user::User;
 use crate::model::session::Session;
 use crate::database::session_db::SessionDB;
@@ -9,37 +9,12 @@ use crate::model::session_request::{SessionRequest, AddTodoRequest, ToggleTodoRe
 use crate::model::todo::TodoItem;
 use serde::export::Formatter;
 use std::backtrace::Backtrace;
-use std::error::Error;
-
-#[post("/regi")]
-pub async fn regi(db: web::Data<UserDB>, todo_db: web::Data<TodoDB>, user: web::Json<User>) -> actix_web::Result<HttpResponse> {
-    match db.add(user.0) {
-        Ok(user) => {
-            todo_db.regi_user(user.clone());
-            Ok(HttpResponse::build(StatusCode::OK).body(""))
-        }
-        Err(UserDBError::UserExists) => Err(error::ErrorConflict(UserDBError::UserExists))
-    }
-}
-
-#[post("/login")]
-pub async fn login(user_db: web::Data<UserDB>, session_db: web::Data<SessionDB>, user: web::Json<User>) -> actix_web::Result<HttpResponse> {
-    match user_db.find(&user.name) {
-        Some(found_user) => if user.password == found_user.upgrade().unwrap().password {
-            let session = Session::new(found_user);
-            let response = session.id.to_string();
-            session_db.add(session.clone());
-            Ok(HttpResponse::build(StatusCode::OK).body(response))
-        } else {
-            Err(error::ErrorForbidden(""))
-        }
-        None => Err(error::ErrorForbidden(""))
-    }
-}
 
 #[derive(Debug)]
 pub enum ServerError {
     InvalidSession,
+    UserExists,
+    UserDoesntExist,
     InternalError {
         error: Option<Box<dyn std::error::Error>>,
         backtrace: Backtrace,
@@ -49,7 +24,8 @@ pub enum ServerError {
 impl std::fmt::Display for ServerError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ServerError::InvalidSession => write!(f, "{:?}", ServerError::InvalidSession),
+            // ServerError::InvalidSession => write!(f, "{:?}", ServerError::InvalidSession),
+            // ServerError::UserExists => write!(f, "{:?}", ServerError::UserExists),
             ServerError::InternalError { backtrace, error } => {
                 if let Some(error) = error {
                     write!(f, "{:?}\n{}", error, backtrace)
@@ -57,6 +33,7 @@ impl std::fmt::Display for ServerError {
                     write!(f, "Unspecified error\n{}", backtrace)
                 }
             }
+            err => write!(f, "{:?}", err),
         }
     }
 }
@@ -64,7 +41,8 @@ impl std::fmt::Display for ServerError {
 impl actix_web::error::ResponseError for ServerError {
     fn status_code(&self) -> StatusCode {
         match self {
-            ServerError::InvalidSession => StatusCode::UNAUTHORIZED,
+            ServerError::InvalidSession | ServerError::UserDoesntExist => StatusCode::FORBIDDEN,
+            ServerError::UserExists => StatusCode::CONFLICT,
             ServerError::InternalError { error: _, backtrace: _ } => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -144,6 +122,30 @@ impl<T, E: 'static + std::error::Error> ServerUnwrapError for Result<T, E> {
 
 fn ok_response<B: Into<actix_web::body::Body>>(body: B) -> actix_web::Result<HttpResponse> {
     Ok(HttpResponse::build(StatusCode::OK).body(body))
+}
+
+fn err_response(err: ServerError) -> actix_web::Result<HttpResponse> {
+    Err(actix_web::Error::from(err))
+}
+
+#[post("/regi")]
+pub async fn regi(user_db: web::Data<UserDB>, todo_db: web::Data<TodoDB>, user: web::Json<User>) -> actix_web::Result<HttpResponse> {
+    if user_db.find(&user.name).is_some() {
+        return err_response(ServerError::UserExists);
+    }
+
+    let user = unwrap!(user_db.add(user.0))?;
+    todo_db.regi_user(user);
+    ok_response("")
+}
+
+#[post("/login")]
+pub async fn login(user_db: web::Data<UserDB>, session_db: web::Data<SessionDB>, user: web::Json<User>) -> actix_web::Result<HttpResponse> {
+    let user = unwrap!(user_db.find(&user.name), ServerError::UserDoesntExist)?;
+    let session = Session::new(user);
+    let response = session.id.to_string();
+    session_db.add(session);
+    ok_response(response)
 }
 
 #[post("/list")]

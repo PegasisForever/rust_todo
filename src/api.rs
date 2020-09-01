@@ -160,37 +160,18 @@ pub async fn list(session_db: web::Data<SessionDB>,
     ok_response(format!("{:?}", todo_list))
 }
 
-pub async fn _add(session_db: web::Data<SessionDB>,
-                  todo_db: web::Data<TodoDB>,
-                  request: web::Json<AddTodoRequest>,
-) -> Result<String, ServerError> {
+#[post("/add")]
+pub async fn add(session_db: web::Data<SessionDB>,
+                 todo_db: web::Data<TodoDB>,
+                 request: web::Json<AddTodoRequest>,
+) -> actix_web::Result<HttpResponse> {
     let session = unwrap!(session_db.find(&request.session_id), ServerError::InvalidSession)?;
     let user = unwrap!(session.user.upgrade())?;
 
     let todo_item = TodoItem::new(&*request.todo_name);
     let response = todo_item.id.to_string();
     unwrap_err!(todo_db.add_todo(&user, todo_item))?;
-    Ok(response)
-}
-
-#[post("/add")]
-pub async fn add(session_db: web::Data<SessionDB>,
-                 todo_db: web::Data<TodoDB>,
-                 request: web::Json<AddTodoRequest>,
-) -> actix_web::Result<HttpResponse> {
-    match _add(session_db, todo_db, request).await {
-        Ok(response) => Ok(HttpResponse::build(StatusCode::OK).body(response)),
-        Err(ServerError::InvalidSession) => Err(error::ErrorForbidden("")),
-        Err(ServerError::InternalError { backtrace, error }) => {
-            if let Some(error) = error {
-                println!("{:?}", error);
-            } else {
-                println!("Unspecified error")
-            }
-            println!("{}", backtrace);
-            Err(error::ErrorInternalServerError(""))
-        }
-    }
+    ok_response(response)
 }
 
 #[post("/toggle")]
@@ -198,21 +179,11 @@ pub async fn toggle(session_db: web::Data<SessionDB>,
                     todo_db: web::Data<TodoDB>,
                     request: web::Json<ToggleTodoRequest>,
 ) -> actix_web::Result<HttpResponse> {
-    let session_id = request.session_id;
-    match session_db.find(&session_id) {
-        None => Err(error::ErrorForbidden("")),
-        Some(session) => if session.is_valid() {
-            match session.user.upgrade() {
-                None => Err(error::ErrorForbidden("")),
-                Some(user) => {
-                    todo_db.toggle_todo(&user, request.todo_id, request.completed);
-                    Ok(HttpResponse::build(StatusCode::OK).body(""))
-                }
-            }
-        } else {
-            Err(error::ErrorForbidden(""))
-        }
-    }
+    let session = unwrap!(session_db.find(&request.session_id), ServerError::InvalidSession)?;
+    let user = unwrap!(session.user.upgrade())?;
+
+    unwrap_err!(todo_db.toggle_todo(&user, request.todo_id,request.completed))?;
+    ok_response("")
 }
 
 #[post("/remove")]
@@ -220,19 +191,9 @@ pub async fn remove(session_db: web::Data<SessionDB>,
                     todo_db: web::Data<TodoDB>,
                     request: web::Json<RemoveTodoRequest>,
 ) -> actix_web::Result<HttpResponse> {
-    let session_id = request.session_id;
-    match session_db.find(&session_id) {
-        None => Err(error::ErrorForbidden("")),
-        Some(session) => if session.is_valid() {
-            match session.user.upgrade() {
-                None => Err(error::ErrorForbidden("")),
-                Some(user) => {
-                    todo_db.remove_todo(&user, request.todo_id);
-                    Ok(HttpResponse::build(StatusCode::OK).body(""))
-                }
-            }
-        } else {
-            Err(error::ErrorForbidden(""))
-        }
-    }
+    let session = unwrap!(session_db.find(&request.session_id), ServerError::InvalidSession)?;
+    let user = unwrap!(session.user.upgrade())?;
+
+    unwrap_err!(todo_db.remove_todo(&user, request.todo_id))?;
+    ok_response("")
 }

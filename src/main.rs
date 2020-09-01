@@ -14,7 +14,6 @@ extern crate env_logger;
 extern crate uuid;
 
 use std::env;
-use actix_web::middleware::Logger;
 use actix_web::{web, App, HttpServer};
 use crate::api::{regi, login, list, add, toggle, remove};
 use crate::database::user_db::UserDB;

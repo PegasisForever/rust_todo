@@ -8,6 +8,8 @@ mod model;
 #[macro_use]
 extern crate actix_web;
 extern crate serde;
+#[macro_use]
+extern crate log;
 extern crate env_logger;
 extern crate uuid;
 
@@ -23,11 +25,8 @@ const SERVER_ADDRESS: &str = "0.0.0.0:8001";
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
-    env::set_var("RUST_LOG", "actix_web=debug,actix_server=info");
-    env::set_var("RUST_BACKTRACE", "1");
+    env::set_var("RUST_LOG", "debug,actix_web=debug,actix_server=info");
     env_logger::init();
-
-    println!("Starting server at http://{}.", SERVER_ADDRESS);
 
     let user_db = web::Data::new(UserDB::new());
     let session_db = web::Data::new(SessionDB::new());
@@ -50,6 +49,6 @@ async fn main() -> std::io::Result<()> {
         .await?;
 
     //todo save db
-    println!("Server exited.");
+    info!("Server exited.");
     Ok(())
 }

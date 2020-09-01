@@ -1201,6 +1201,7 @@ dependencies = [
  "actix-rt",
  "actix-web",
  "env_logger",
+ "log",
  "serde",
  "uuid",
  "weak-table",

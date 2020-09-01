@@ -70,41 +70,27 @@ impl actix_web::error::ResponseError for ServerError {
     }
 
     fn error_response(&self) -> HttpResponse {
-        println!("{}",self);
         HttpResponse::new(self.status_code())
     }
 }
 
 macro_rules! new_internal_error {
-    () => {
-        ServerError::InternalError{
+    () => {{
+        let err = ServerError::InternalError{
             backtrace: Backtrace::capture(),
             error: None,
-        }
-    };
-    ($expression:expr) => {
-        ServerError::InternalError{
+        };
+        error!("{}", &err);
+        err
+    }};
+    ($expression:expr) => {{
+        let err = ServerError::InternalError{
             backtrace: Backtrace::capture(),
             error: Some(Box::new($expression)),
-        }
-    };
-}
-
-pub async fn _list(session_db: web::Data<SessionDB>,
-                   todo_db: web::Data<TodoDB>,
-                   request: web::Json<SessionRequest>,
-) -> Result<String, ServerError> {
-    String::from("a").parse::<i32>().map_err(|err| { new_internal_error!(err) })?;
-    let session = session_db.find(&request.session_id)
-        .ok_or(ServerError::InvalidSession)?;
-    let user = session.user.upgrade()
-        .ok_or(new_internal_error!())?;
-
-    let all_todo_list = todo_db.list.lock()
-        .map_err(|_| { new_internal_error!() })?;
-    let todo_list = all_todo_list.get(&user)
-        .ok_or(new_internal_error!())?;
-    Ok(format!("{:?}", todo_list))
+        };
+        error!("{}", &err);
+        err
+    }};
 }
 
 #[post("/list")]

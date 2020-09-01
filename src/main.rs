@@ -49,6 +49,5 @@ async fn main() -> std::io::Result<()> {
         .await?;
 
     //todo save db
-    info!("Server exited.");
     Ok(())
 }

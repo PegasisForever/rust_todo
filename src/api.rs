@@ -93,21 +93,28 @@ macro_rules! new_internal_error {
     }};
 }
 
+macro_rules! unwrap {
+    ($expression:expr) => {
+        $expression.ok_or(new_internal_error!())
+    };
+    (result, $expression:expr) => {
+        $expression.map_err(|err| { new_internal_error!(err) })
+    };
+    (result_noerr, $expression:expr) => {
+        $expression.map_err(|_| { new_internal_error!() })
+    };
+}
+
 #[post("/list")]
 pub async fn list(session_db: web::Data<SessionDB>,
                   todo_db: web::Data<TodoDB>,
                   request: web::Json<SessionRequest>,
 ) -> actix_web::Result<HttpResponse> {
-    String::from("a").parse::<i32>().map_err(|err| { new_internal_error!(err) })?;
-    let session = session_db.find(&request.session_id)
-        .ok_or(ServerError::InvalidSession)?;
-    let user = session.user.upgrade()
-        .ok_or(new_internal_error!())?;
+    let session = unwrap!(session_db.find(&request.session_id))?;
+    let user = unwrap!(session.user.upgrade())?;
 
-    let all_todo_list = todo_db.list.lock()
-        .map_err(|_| { new_internal_error!() })?;
-    let todo_list = all_todo_list.get(&user)
-        .ok_or(new_internal_error!())?;
+    let all_todo_list = unwrap!(result_noerr, todo_db.list.lock())?;
+    let todo_list = unwrap!(all_todo_list.get(&user))?;
     Ok(HttpResponse::build(StatusCode::OK).body(format!("{:?}", todo_list)))
 }
 
@@ -123,7 +130,7 @@ pub async fn _add(session_db: web::Data<SessionDB>,
     let todo_item = TodoItem::new(&*request.todo_name);
     let response = todo_item.id.to_string();
     todo_db.add_todo(&user, todo_item)
-        .map_err(|err| { new_internal_error!() })?;
+        .map_err(|err| { new_internal_error!(err) })?;
     Ok(response)
 }
 

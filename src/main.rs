@@ -19,12 +19,13 @@ use crate::api::api::{regi, login, list, add, toggle, remove};
 use crate::database::user_db::UserDB;
 use crate::database::session_db::SessionDB;
 use crate::database::todo_db::TodoDB;
+use actix_web::middleware::Logger;
 
 const SERVER_ADDRESS: &str = "0.0.0.0:8001";
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
-    env::set_var("RUST_LOG", "debug,actix_web=debug,actix_server=info");
+    env::set_var("RUST_LOG", "debug,actix_server=info");
     env_logger::init();
 
     let user_db = web::Data::new(UserDB::new());
@@ -36,6 +37,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(user_db.clone())
             .app_data(session_db.clone())
             .app_data(todo_db.clone())
+            .wrap(Logger::default())
             .service(regi)
             .service(login)
             .service(list)

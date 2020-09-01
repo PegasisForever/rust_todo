@@ -2,6 +2,10 @@ use std::fmt;
 use std::sync::{Mutex, Arc, Weak};
 use crate::model::user::User;
 use std::fmt::Formatter;
+use std::fs;
+use log::info;
+use std::path::Path;
+use serde_json::from_str;
 
 #[derive(Debug)]
 pub enum UserDBError {
@@ -19,14 +23,41 @@ impl fmt::Display for UserDBError {
 impl std::error::Error for UserDBError {}
 
 pub struct UserDB {
-    list: Mutex<Vec<Arc<User>>>
+    file_path: String,
+    list: Mutex<Vec<Arc<User>>>,
 }
 
 impl UserDB {
-    pub fn new() -> UserDB {
-        UserDB {
-            list: Mutex::new(vec![]),
+    pub fn new(file_path: String) -> UserDB {
+        let path = Path::new(&file_path);
+        if !path.exists() {
+            path.parent().map(|parent| {
+                fs::create_dir_all(parent).unwrap();
+            });
+            fs::write(path, "[]").unwrap();
         }
+        let json = fs::read_to_string(&file_path).unwrap();
+
+        let deserialized = from_str::<Vec<User>>(&json)
+            .unwrap()
+            .into_iter()
+            .map(|user| Arc::new(user))
+            .collect::<Vec<Arc<User>>>();
+        info!("Read UserDB from {}.", &file_path);
+        UserDB {
+            file_path,
+            list: Mutex::new(deserialized),
+        }
+    }
+
+    pub fn save(self: &UserDB) {
+        let list = self.list.lock().unwrap();
+        let mapped = list.iter()
+            .map(|item| { item.as_ref() })
+            .collect::<Vec<&User>>();
+        let serialized = serde_json::to_string(&mapped).unwrap();
+        fs::write(&self.file_path, serialized).unwrap();
+        info!("UserDB saved to {}.", &self.file_path);
     }
 
     pub fn add(self: &UserDB, user: User) -> Result<Arc<User>, UserDBError> {

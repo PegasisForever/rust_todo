@@ -8,6 +8,7 @@ mod model;
 #[macro_use]
 extern crate actix_web;
 extern crate serde;
+extern crate serde_json;
 #[macro_use]
 extern crate log;
 extern crate env_logger;
@@ -22,13 +23,15 @@ use crate::database::todo_db::TodoDB;
 use actix_web::middleware::Logger;
 
 const SERVER_ADDRESS: &str = "0.0.0.0:8001";
+const USER_DB_PATH: &str = "data/user_db.json";
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     env::set_var("RUST_LOG", "debug,actix_server=info");
     env_logger::init();
 
-    let user_db = web::Data::new(UserDB::new());
+    let user_db = web::Data::new(UserDB::new(String::from(USER_DB_PATH)));
+    let user_db_global = user_db.clone();
     let session_db = web::Data::new(SessionDB::new());
     let todo_db = web::Data::new(TodoDB::new());
 
@@ -49,6 +52,7 @@ async fn main() -> std::io::Result<()> {
         .run()
         .await?;
 
+    user_db_global.save();
     //todo save db
     Ok(())
 }

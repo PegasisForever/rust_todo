@@ -19,7 +19,7 @@ export default class Login extends React.Component {
                 Register
             </button>
             <h2>Login</h2>
-            <form onSubmit={async (e) => {
+            <form onSubmit={(e) => {
                 e.preventDefault()
                 postData(API_BASE_PATH + "login", this.state, (status, response) => {
                     if (status === 200) {

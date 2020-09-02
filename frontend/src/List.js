@@ -9,9 +9,11 @@ export default class List extends React.Component {
 
         this.getTodoList = this.getTodoList.bind(this)
         this.toggleTodo = this.toggleTodo.bind(this)
+        this.addTodo = this.addTodo.bind(this)
 
         this.state = {
             todos: [],
+            newTodoName: "",
         }
     }
 
@@ -27,6 +29,25 @@ export default class List extends React.Component {
             <button onClick={this.getTodoList}>
                 Refresh
             </button>
+            <form onSubmit={(e) => {
+                console.log("awa")
+                e.preventDefault()
+                if (this.state.newTodoName === "") {
+                    alert("Todo name cannot be empty!")
+                } else {
+                    this.addTodo(this.state.newTodoName)
+                }
+            }}>
+                <label>
+                    Add todo:
+                    <input type="text" name="add"
+                           value={this.state.newTodoName}
+                           onChange={(e) => this.setState({
+                               newTodoName: e.target.value,
+                           })}/>
+                </label>
+                <input type="submit" value="Add"/>
+            </form>
             <ul>
                 {this.state.todos.map((todo) =>
                     <li key={todo.id}>
@@ -83,4 +104,30 @@ export default class List extends React.Component {
         )
     }
 
+    addTodo(name) {
+        postData(
+            API_BASE_PATH + "add",
+            {
+                session_id: this.props.sessionId,
+                todo_name: name,
+            },
+            (status, response) => {
+                if (status === 200) {
+                    this.state.todos.push({
+                        id: JSON.parse(response)["todo_item_id"],
+                        name: name,
+                        completed: false,
+                    })
+                    this.setState({
+                        newTodoText: "",
+                    })
+                } else if (status === 403) {
+                    alert(`Please login.`)
+                    this.props.changePage(<Login changePage={this.props.changePage}/>)
+                } else {
+                    alert(`Unknown error: ${status}`)
+                }
+            },
+        )
+    }
 }

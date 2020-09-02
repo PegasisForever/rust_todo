@@ -22,15 +22,18 @@ use crate::database::session_db::SessionDB;
 use crate::database::todo_db::TodoDB;
 use actix_web::middleware::Logger;
 
-const SERVER_ADDRESS: &str = "0.0.0.0:8001";
-const USER_DB_PATH: &str = "data/user_db.json";
-const SESSION_DB_PATH: &str = "data/session_db.json";
-const TODO_DB_PATH: &str = "data/todo_db.json";
+const DEFAULT_SERVER_ADDRESS: &str = "0.0.0.0:8001";
+const USER_DB_PATH: &str = "todo_data/user_db.json";
+const SESSION_DB_PATH: &str = "todo_data/session_db.json";
+const TODO_DB_PATH: &str = "todo_data/todo_db.json";
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     env::set_var("RUST_LOG", "debug,actix_server=info");
     env_logger::init();
+
+    let server_address = env::args().collect::<Vec<String>>().get(1)
+        .map_or_else(|| String::from(DEFAULT_SERVER_ADDRESS), |arg| String::from(arg));
 
     let user_db = web::Data::new(UserDB::new(String::from(USER_DB_PATH)));
     let user_db_global = user_db.clone();
@@ -52,7 +55,7 @@ async fn main() -> std::io::Result<()> {
             .service(toggle)
             .service(remove)
     })
-        .bind(SERVER_ADDRESS)?
+        .bind(server_address)?
         .run()
         .await?;
 

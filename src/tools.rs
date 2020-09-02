@@ -1,6 +1,7 @@
 use std::path::Path;
 use std::{fs, io};
 use serde::export::Option::Some;
+use log::info;
 
 pub fn ensure_file_exists(file_path: &str, init_text: &str) -> io::Result<()> {
     let path = Path::new(file_path);
@@ -9,6 +10,7 @@ pub fn ensure_file_exists(file_path: &str, init_text: &str) -> io::Result<()> {
             fs::create_dir_all(parent)?;
         }
         fs::write(path, init_text)?;
+        info!("Created file {}.", file_path);
     }
     Ok(())
 }

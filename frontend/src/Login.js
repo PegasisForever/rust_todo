@@ -1,6 +1,5 @@
 import React from "react"
-import {postData} from "./tools"
-import {API_BASE_PATH} from "./App"
+import {getBasePath, postData} from "./tools"
 import List from "./List"
 import Regi from "./Regi"
 
@@ -21,7 +20,7 @@ export default class Login extends React.Component {
             <h2>Login</h2>
             <form onSubmit={(e) => {
                 e.preventDefault()
-                postData(API_BASE_PATH + "login", this.state, (status, response) => {
+                postData(getBasePath() + "login", this.state, (status, response) => {
                     if (status === 200) {
                         this.props.changePage(<List
                             changePage={this.props.changePage}

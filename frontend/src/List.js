@@ -1,7 +1,6 @@
 import React from "react"
 import Login from "./Login"
-import {postData, removeItemOnce} from "./tools"
-import {API_BASE_PATH} from "./App"
+import {getBasePath, postData, removeItemOnce} from "./tools"
 
 export default class List extends React.Component {
     constructor(props) {
@@ -81,7 +80,7 @@ export default class List extends React.Component {
 
     getTodoList() {
         postData(
-            API_BASE_PATH + "list",
+            getBasePath() + "list",
             {session_id: this.props.sessionId},
             (status, response) => {
                 if (status === 200) {
@@ -100,7 +99,7 @@ export default class List extends React.Component {
 
     toggleTodo(todo, completed) {
         postData(
-            API_BASE_PATH + "toggle",
+            getBasePath() + "toggle",
             {
                 session_id: this.props.sessionId,
                 todo_id: todo.id,
@@ -122,7 +121,7 @@ export default class List extends React.Component {
 
     addTodo(name) {
         postData(
-            API_BASE_PATH + "add",
+            getBasePath() + "add",
             {
                 session_id: this.props.sessionId,
                 todo_name: name,
@@ -149,7 +148,7 @@ export default class List extends React.Component {
 
     removeTodo(todo) {
         postData(
-            API_BASE_PATH + "remove",
+            getBasePath() + "remove",
             {
                 session_id: this.props.sessionId,
                 todo_id: todo.id,

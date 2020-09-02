@@ -10,9 +10,17 @@ export function postData(url, data, callback) {
 }
 
 export function removeItemOnce(arr, value) {
-    let index = arr.indexOf(value);
+    let index = arr.indexOf(value)
     if (index > -1) {
-        arr.splice(index, 1);
+        arr.splice(index, 1)
     }
-    return arr;
+    return arr
+}
+
+export function getBasePath() {
+    if (!process.env.NODE_ENV || process.env.NODE_ENV === "development") {
+        return "http://localhost:8001/"
+    } else {
+        return "/"
+    }
 }

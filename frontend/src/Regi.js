@@ -1,6 +1,5 @@
 import React from "react"
-import {postData} from "./tools"
-import {API_BASE_PATH} from "./App"
+import {getBasePath, postData} from "./tools"
 import Login from "./Login"
 
 export default class Regi extends React.Component {
@@ -20,7 +19,7 @@ export default class Regi extends React.Component {
             <h2>Register</h2>
             <form onSubmit={async (e) => {
                 e.preventDefault()
-                postData(API_BASE_PATH + "regi", this.state, (status, _) => {
+                postData(getBasePath() + "regi", this.state, (status, _) => {
                     if (status === 200) {
                         alert("Success!")
                     } else if (status === 409) {

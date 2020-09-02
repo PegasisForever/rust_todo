@@ -62,11 +62,7 @@ impl UserDB {
     pub fn add(self: &UserDB, name: &str, password: &str) -> Result<Arc<User>, UserDBError> {
         match self.find(name) {
             None => {
-                let user = User {
-                    name: String::from(name),
-                    password: String::from(password),
-                };
-                let arc = Arc::new(user);
+                let arc = Arc::new(User::new(name, password));
                 self.list.lock().unwrap().push(arc.clone());
                 Ok(arc)
             }

@@ -2,6 +2,7 @@ import React from "react"
 import postData from "./tools"
 import {API_BASE_PATH} from "./App"
 import List from "./List"
+import Regi from "./Regi"
 
 export default class Login extends React.Component {
     constructor(props) {
@@ -14,7 +15,9 @@ export default class Login extends React.Component {
 
     render() {
         return <div>
-            <button>Register</button>
+            <button onClick={() => this.props.changePage(<Regi changePage={this.props.changePage}/>)}>
+                Register
+            </button>
             <h2>Login</h2>
             <form onSubmit={async (e) => {
                 e.preventDefault()

@@ -10,7 +10,7 @@ export default class App extends React.Component {
         this.changePage = this.changePage.bind(this)
 
         this.state = {
-            page: <Login changePage={this.changePage} setSessionId={this.setSessionId}/>,
+            page: <Login changePage={this.changePage}/>,
         }
     }
 

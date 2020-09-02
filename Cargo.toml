@@ -17,3 +17,4 @@ uuid = { version = "0.8.1", features = ["serde", "v4"] }
 weak-table = "0.3.0"
 env_logger = "0.7"
 log = "0.4.11"
+json = "0.12.4"

@@ -38,7 +38,7 @@ pub async fn list(session_db: web::Data<SessionDB>,
     let session = unwrap!(session_db.find(&request.session_id), ServerError::InvalidSession)?;
     let user = unwrap!(session.user.upgrade())?;
 
-    let all_todo_list = unwrap!(todo_db.list.lock())?;
+    let all_todo_list = unwrap!(todo_db.map.lock())?;
     let todo_list = unwrap!(all_todo_list.get(&user))?;
 
     ok_response(format!("{:?}", todo_list))

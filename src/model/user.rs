@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use std::hash::Hasher;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
     pub name: String,
     pub password: String,

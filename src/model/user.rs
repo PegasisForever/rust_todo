@@ -1,10 +1,27 @@
-use serde::{Serialize, Deserialize};
+use serde::Deserialize;
 use std::hash::Hasher;
+use json::{object, JsonValue};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct User {
     pub name: String,
     pub password: String,
+}
+
+impl User{
+    pub fn from_json(json: &JsonValue) -> Self {
+        Self {
+            name: String::from(json["name"].as_str().unwrap()),
+            password: String::from(json["password"].as_str().unwrap()),
+        }
+    }
+
+    pub fn to_json(self: &Self) -> JsonValue {
+        object! {
+            name: self.name.clone(),
+            password: self.password.clone(),
+        }
+    }
 }
 
 impl std::cmp::PartialEq for User {

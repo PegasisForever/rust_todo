@@ -6,6 +6,7 @@ use std::fs;
 use log::info;
 use std::path::Path;
 use serde_json::from_str;
+use crate::tools::ensure_file_exists;
 
 #[derive(Debug)]
 pub enum UserDBError {
@@ -29,35 +30,35 @@ pub struct UserDB {
 
 impl UserDB {
     pub fn new(file_path: String) -> UserDB {
-        let path = Path::new(&file_path);
-        if !path.exists() {
-            path.parent().map(|parent| {
-                fs::create_dir_all(parent).unwrap();
-            });
-            fs::write(path, "[]").unwrap();
-        }
-        let json = fs::read_to_string(&file_path).unwrap();
+        ensure_file_exists(&file_path, "{}").unwrap();
 
-        let deserialized = from_str::<Vec<User>>(&json)
-            .unwrap()
-            .into_iter()
-            .map(|user| Arc::new(user))
+        let json = json::parse(&fs::read_to_string(&file_path).unwrap()).unwrap();
+        let list = json.members()
+            .map(|user_json| {
+                Arc::new(User::from_json(user_json))
+            })
             .collect::<Vec<Arc<User>>>();
+
         info!("Read UserDB from {}.", &file_path);
         UserDB {
             file_path,
-            list: Mutex::new(deserialized),
+            list: Mutex::new(list),
         }
     }
 
     pub fn save(self: &UserDB) {
-        let list = self.list.lock().unwrap();
-        let mapped = list.iter()
-            .map(|item| { item.as_ref() })
-            .collect::<Vec<&User>>();
-        let serialized = serde_json::to_string(&mapped).unwrap();
-        fs::write(&self.file_path, serialized).unwrap();
+        fs::write(&self.file_path, self.serialize()).unwrap();
         info!("UserDB saved to {}.", &self.file_path);
+    }
+
+    fn serialize(self: &Self) -> String {
+        let list = self.list.lock().unwrap();
+        let mut json = json::JsonValue::new_array();
+        list.iter().for_each(|user| {
+            json.push(user.to_json()).unwrap();
+        });
+
+        json.dump()
     }
 
     pub fn add(self: &UserDB, user: User) -> Result<Arc<User>, UserDBError> {

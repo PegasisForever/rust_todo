@@ -29,7 +29,7 @@ impl TodoItem {
         object! {
             id: self.id.to_string(),
             name: self.name.clone(),
-            completed: self.completed
+            completed: self.completed,
         }
     }
 }

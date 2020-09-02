@@ -40,7 +40,7 @@ impl Session {
         Some(object! {
             id:self.id.to_string(),
             user_name:self.user.upgrade().unwrap().name.clone(),
-            expire_time: self.expire_time.duration_since(UNIX_EPOCH).unwrap().as_secs()
+            expire_time: self.expire_time.duration_since(UNIX_EPOCH).unwrap().as_secs(),
         })
     }
 }

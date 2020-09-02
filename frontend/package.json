@@ -12,7 +12,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "react-scripts build && html-inline -i build/index.html -o inlined/index.html -b build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

@@ -11,6 +11,7 @@ export default class List extends React.Component {
         this.toggleTodo = this.toggleTodo.bind(this)
         this.addTodo = this.addTodo.bind(this)
         this.removeTodo = this.removeTodo.bind(this)
+        this.getTodoLi = this.getTodoLi.bind(this)
 
         this.state = {
             todos: [],
@@ -22,7 +23,30 @@ export default class List extends React.Component {
         this.getTodoList()
     }
 
+    getTodoLi(todoList) {
+        return todoList.map((todo) =>
+            <li key={todo.id}>
+                {todo.completed ?
+                    <del>{todo.name}</del> :
+                    <span>{todo.name}</span>}
+                {todo.completed ?
+                    <button onClick={() => this.toggleTodo(todo, false)}>Restore</button> :
+                    <button onClick={() => this.toggleTodo(todo, true)}>Complete</button>}
+                <button onClick={() => this.removeTodo(todo)}>Remove</button>
+            </li>)
+    }
+
     render() {
+        let completed = []
+        let notCompleted = []
+        this.state.todos.slice().reverse().forEach((todo) => {
+            if (todo.completed) {
+                completed.push(todo)
+            } else {
+                notCompleted.push(todo)
+            }
+        })
+
         return <div>
             <button onClick={() => this.props.changePage(<Login changePage={this.props.changePage}/>)}>
                 Logout
@@ -49,16 +73,8 @@ export default class List extends React.Component {
                 <input type="submit" value="Add"/>
             </form>
             <ul>
-                {this.state.todos.map((todo) =>
-                    <li key={todo.id}>
-                        {todo.completed ?
-                            <del>{todo.name}</del> :
-                            <span>{todo.name}</span>}
-                        {todo.completed ?
-                            <button onClick={() => this.toggleTodo(todo, false)}>Restore</button> :
-                            <button onClick={() => this.toggleTodo(todo, true)}>Complete</button>}
-                        <button onClick={() => this.removeTodo(todo)}>Remove</button>
-                    </li>)}
+                {this.getTodoLi(notCompleted)}
+                {this.getTodoLi(completed)}
             </ul>
         </div>
     }

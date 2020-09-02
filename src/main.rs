@@ -5,6 +5,7 @@ mod api;
 mod database;
 mod model;
 mod tools;
+mod webpage;
 
 #[macro_use]
 extern crate actix_web;
@@ -59,6 +60,7 @@ async fn main() -> std::io::Result<()> {
             .service(add)
             .service(toggle)
             .service(remove)
+            .service(webpage::webpage)
     })
         .bind(server_address)?
         .run()

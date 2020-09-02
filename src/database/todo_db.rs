@@ -4,7 +4,6 @@ use crate::model::user::User;
 use crate::model::todo::TodoItem;
 use uuid::Uuid;
 use std::fmt::Formatter;
-use std::path::Path;
 use std::fs;
 use log::info;
 use crate::tools::ensure_file_exists;

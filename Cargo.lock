@@ -1210,7 +1210,6 @@ dependencies = [
  "json",
  "log",
  "serde",
- "serde_json",
  "uuid",
  "weak-table",
 ]

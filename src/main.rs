@@ -9,7 +9,6 @@ mod tools;
 #[macro_use]
 extern crate actix_web;
 extern crate serde;
-extern crate serde_json;
 #[macro_use]
 extern crate log;
 extern crate env_logger;
@@ -25,6 +24,7 @@ use actix_web::middleware::Logger;
 
 const SERVER_ADDRESS: &str = "0.0.0.0:8001";
 const USER_DB_PATH: &str = "data/user_db.json";
+const SESSION_DB_PATH: &str = "data/session_db.json";
 const TODO_DB_PATH: &str = "data/todo_db.json";
 
 #[actix_rt::main]
@@ -34,7 +34,8 @@ async fn main() -> std::io::Result<()> {
 
     let user_db = web::Data::new(UserDB::new(String::from(USER_DB_PATH)));
     let user_db_global = user_db.clone();
-    let session_db = web::Data::new(SessionDB::new());
+    let session_db = web::Data::new(SessionDB::new(String::from(SESSION_DB_PATH), &user_db));
+    let session_db_global = session_db.clone();
     let todo_db = web::Data::new(TodoDB::new(String::from(TODO_DB_PATH), user_db.get_ref()));
     let todo_db_global = todo_db.clone();
 
@@ -56,7 +57,7 @@ async fn main() -> std::io::Result<()> {
         .await?;
 
     user_db_global.save();
+    session_db_global.save();
     todo_db_global.save();
-    //todo save db
     Ok(())
 }

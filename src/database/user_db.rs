@@ -4,8 +4,6 @@ use crate::model::user::User;
 use std::fmt::Formatter;
 use std::fs;
 use log::info;
-use std::path::Path;
-use serde_json::from_str;
 use crate::tools::ensure_file_exists;
 
 #[derive(Debug)]

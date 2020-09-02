@@ -30,7 +30,6 @@ export default class List extends React.Component {
                 Refresh
             </button>
             <form onSubmit={(e) => {
-                console.log("awa")
                 e.preventDefault()
                 if (this.state.newTodoName === "") {
                     alert("Todo name cannot be empty!")
@@ -119,7 +118,7 @@ export default class List extends React.Component {
                         completed: false,
                     })
                     this.setState({
-                        newTodoText: "",
+                        newTodoName: "",
                     })
                 } else if (status === 403) {
                     alert(`Please login.`)

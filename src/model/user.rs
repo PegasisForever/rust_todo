@@ -8,7 +8,7 @@ pub struct User {
     pub password: String,
 }
 
-impl User{
+impl User {
     pub fn from_json(json: &JsonValue) -> Self {
         Self {
             name: String::from(json["name"].as_str().unwrap()),
@@ -21,6 +21,10 @@ impl User{
             name: self.name.clone(),
             password: self.password.clone(),
         }
+    }
+
+    pub fn verify_password(self: &Self, password: &str) -> bool {
+        self.password == password
     }
 }
 

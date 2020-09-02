@@ -2,6 +2,18 @@ use uuid::Uuid;
 use serde::{Deserialize};
 
 #[derive(Debug, Clone, Deserialize)]
+pub struct RegisterData {
+    pub name: String,
+    pub password: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct LoginData {
+    pub name: String,
+    pub password: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
 pub struct SessionRequest {
     pub session_id: Uuid,
 }

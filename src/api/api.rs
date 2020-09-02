@@ -1,10 +1,9 @@
 use actix_web::{web, HttpResponse};
 use crate::database::user_db::UserDB;
-use crate::model::user::User;
 use crate::model::session::Session;
 use crate::database::session_db::SessionDB;
 use crate::database::todo_db::{TodoDB};
-use crate::model::session_request::{SessionRequest, AddTodoRequest, ToggleTodoRequest, RemoveTodoRequest};
+use crate::model::request::{SessionRequest, AddTodoRequest, ToggleTodoRequest, RemoveTodoRequest, RegisterData, LoginData};
 use crate::model::todo::TodoItem;
 use crate::api::error::ServerError;
 use crate::api::tools::{err_response, ok_response, ServerUnwrap, ServerUnwrapError};
@@ -13,20 +12,20 @@ use json::object;
 use std::sync::Arc;
 
 #[post("/regi")]
-pub async fn regi(user_db: web::Data<UserDB>, todo_db: web::Data<TodoDB>, user: web::Json<User>) -> actix_web::Result<HttpResponse> {
-    if user_db.find(&user.name).is_some() {
+pub async fn regi(user_db: web::Data<UserDB>, todo_db: web::Data<TodoDB>, req: web::Json<RegisterData>) -> actix_web::Result<HttpResponse> {
+    if user_db.find(&req.name).is_some() {
         return err_response(ServerError::UserExists);
     }
 
-    let user = unwrap!(user_db.add(user.0))?;
+    let user = unwrap!(user_db.add(&req.name, &req.password))?;
     todo_db.regi_user(user);
     ok_response("")
 }
 
 #[post("/login")]
-pub async fn login(user_db: web::Data<UserDB>, session_db: web::Data<SessionDB>, user: web::Json<User>) -> actix_web::Result<HttpResponse> {
-    let found_user = unwrap!(unwrap!(user_db.find(&user.name), ServerError::UserOrPasswdIncorrect)?.upgrade())?;
-    if found_user.password != user.password {
+pub async fn login(user_db: web::Data<UserDB>, session_db: web::Data<SessionDB>, req: web::Json<LoginData>) -> actix_web::Result<HttpResponse> {
+    let found_user = unwrap!(unwrap!(user_db.find(&req.name), ServerError::UserOrPasswdIncorrect)?.upgrade())?;
+    if !found_user.verify_password(&req.password) {
         return err_response(ServerError::UserOrPasswdIncorrect);
     }
 

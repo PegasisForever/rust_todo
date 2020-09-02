@@ -1,6 +1,6 @@
 import React from "react"
 import Login from "./Login"
-import postData from "./tools"
+import {postData, removeItemOnce} from "./tools"
 import {API_BASE_PATH} from "./App"
 
 export default class List extends React.Component {
@@ -10,6 +10,7 @@ export default class List extends React.Component {
         this.getTodoList = this.getTodoList.bind(this)
         this.toggleTodo = this.toggleTodo.bind(this)
         this.addTodo = this.addTodo.bind(this)
+        this.removeTodo = this.removeTodo.bind(this)
 
         this.state = {
             todos: [],
@@ -56,7 +57,7 @@ export default class List extends React.Component {
                         {todo.completed ?
                             <button onClick={() => this.toggleTodo(todo, false)}>Restore</button> :
                             <button onClick={() => this.toggleTodo(todo, true)}>Complete</button>}
-                        <button>Delete</button>
+                        <button onClick={() => this.removeTodo(todo)}>Remove</button>
                     </li>)}
             </ul>
         </div>
@@ -120,6 +121,27 @@ export default class List extends React.Component {
                     this.setState({
                         newTodoName: "",
                     })
+                } else if (status === 403) {
+                    alert(`Please login.`)
+                    this.props.changePage(<Login changePage={this.props.changePage}/>)
+                } else {
+                    alert(`Unknown error: ${status}`)
+                }
+            },
+        )
+    }
+
+    removeTodo(todo) {
+        postData(
+            API_BASE_PATH + "remove",
+            {
+                session_id: this.props.sessionId,
+                todo_id: todo.id,
+            },
+            (status, response) => {
+                if (status === 200) {
+                    removeItemOnce(this.state.todos, todo)
+                    this.setState({})
                 } else if (status === 403) {
                     alert(`Please login.`)
                     this.props.changePage(<Login changePage={this.props.changePage}/>)

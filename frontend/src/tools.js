@@ -1,4 +1,4 @@
-export default function postData(url, data, callback) {
+export function postData(url, data, callback) {
     let xhr = new XMLHttpRequest()
     xhr.onreadystatechange = function () {
         if (this.readyState !== 4) return
@@ -7,4 +7,12 @@ export default function postData(url, data, callback) {
     xhr.open("POST", url, true)
     xhr.setRequestHeader("Content-Type", "application/json")
     xhr.send(JSON.stringify(data))
+}
+
+export function removeItemOnce(arr, value) {
+    let index = arr.indexOf(value);
+    if (index > -1) {
+        arr.splice(index, 1);
+    }
+    return arr;
 }

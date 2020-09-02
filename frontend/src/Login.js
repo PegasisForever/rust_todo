@@ -1,5 +1,5 @@
 import React from "react"
-import postData from "./tools"
+import {postData} from "./tools"
 import {API_BASE_PATH} from "./App"
 import List from "./List"
 import Regi from "./Regi"

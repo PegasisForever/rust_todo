@@ -7,7 +7,7 @@ use actix_web::HttpResponse;
 pub enum ServerError {
     InvalidSession,
     UserExists,
-    UserDoesntExist,
+    UserOrPasswdIncorrect,
     InternalError {
         error: Option<Box<dyn std::error::Error>>,
         backtrace: Backtrace,
@@ -32,7 +32,7 @@ impl std::fmt::Display for ServerError {
 impl actix_web::error::ResponseError for ServerError {
     fn status_code(&self) -> StatusCode {
         match self {
-            ServerError::InvalidSession | ServerError::UserDoesntExist => StatusCode::FORBIDDEN,
+            ServerError::InvalidSession | ServerError::UserOrPasswdIncorrect => StatusCode::FORBIDDEN,
             ServerError::UserExists => StatusCode::CONFLICT,
             ServerError::InternalError { error: _, backtrace: _ } => StatusCode::INTERNAL_SERVER_ERROR,
         }

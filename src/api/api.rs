@@ -10,6 +10,7 @@ use crate::api::error::ServerError;
 use crate::api::tools::{err_response, ok_response, ServerUnwrap, ServerUnwrapError};
 use std::backtrace::Backtrace;
 use json::object;
+use std::sync::Arc;
 
 #[post("/regi")]
 pub async fn regi(user_db: web::Data<UserDB>, todo_db: web::Data<TodoDB>, user: web::Json<User>) -> actix_web::Result<HttpResponse> {
@@ -24,9 +25,13 @@ pub async fn regi(user_db: web::Data<UserDB>, todo_db: web::Data<TodoDB>, user: 
 
 #[post("/login")]
 pub async fn login(user_db: web::Data<UserDB>, session_db: web::Data<SessionDB>, user: web::Json<User>) -> actix_web::Result<HttpResponse> {
-    let user = unwrap!(user_db.find(&user.name), ServerError::UserDoesntExist)?;
-    let session = Session::new(user);
-    let response = object!{
+    let found_user = unwrap!(unwrap!(user_db.find(&user.name), ServerError::UserOrPasswdIncorrect)?.upgrade())?;
+    if found_user.password != user.password {
+        return err_response(ServerError::UserOrPasswdIncorrect);
+    }
+
+    let session = Session::new(Arc::downgrade(&found_user));
+    let response = object! {
         session_id: session.id.to_string(),
     }.dump();
     session_db.add(session);
@@ -61,7 +66,7 @@ pub async fn add(session_db: web::Data<SessionDB>,
     let user = unwrap!(session.user.upgrade())?;
 
     let todo_item = TodoItem::new(&*request.todo_name);
-    let response = object!{
+    let response = object! {
         todo_item_id: todo_item.id.to_string(),
     }.dump();
     unwrap_err!(todo_db.add_todo(&user, todo_item))?;

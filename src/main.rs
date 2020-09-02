@@ -13,6 +13,7 @@ extern crate serde;
 extern crate log;
 extern crate env_logger;
 extern crate uuid;
+extern crate actix_cors;
 
 use std::env;
 use actix_web::{web, App, HttpServer};
@@ -21,6 +22,7 @@ use crate::database::user_db::UserDB;
 use crate::database::session_db::SessionDB;
 use crate::database::todo_db::TodoDB;
 use actix_web::middleware::Logger;
+use actix_cors::Cors;
 
 const DEFAULT_SERVER_ADDRESS: &str = "0.0.0.0:8001";
 const USER_DB_PATH: &str = "todo_data/user_db.json";
@@ -47,6 +49,9 @@ async fn main() -> std::io::Result<()> {
             .app_data(user_db.clone())
             .app_data(session_db.clone())
             .app_data(todo_db.clone())
+            .wrap(Cors::new()
+                .send_wildcard()
+                .finish())
             .wrap(Logger::default())
             .service(regi)
             .service(login)

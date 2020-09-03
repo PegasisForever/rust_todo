@@ -21,6 +21,6 @@ export function getBasePath() {
     if (!process.env.NODE_ENV || process.env.NODE_ENV === "development") {
         return "http://localhost:8001/"
     } else {
-        return "/"
+        return "./"
     }
 }

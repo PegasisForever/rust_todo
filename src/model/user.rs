@@ -13,13 +13,18 @@ const SALT: &[u8] = "fguU2N7af73!5^rD!!cZE9Z!5CK&f67yFPYRBvHM4%8UbbBNXVW-d+t7*QQ
 
 impl User {
     pub fn new(name: &str, password: &str) -> Self {
-        let config = Config::default();
-        let hash = argon2::hash_encoded(password.as_bytes(), SALT, &config).unwrap();
-
         Self {
             name: String::from(name),
-            password_hash: hash,
+            password_hash: User::hash_password(name, password),
         }
+    }
+
+    fn hash_password(name: &str, password: &str) -> String {
+        let mut config = Config::default();
+        config.time_cost = 4;
+        let name_hash = argon2::hash_raw(name.as_bytes(), SALT, &config).unwrap();
+        let hash = argon2::hash_raw(password.as_bytes(), &name_hash, &config).unwrap();
+        hex::encode(hash)
     }
 
     pub fn from_json(json: &JsonValue) -> Self {
@@ -37,7 +42,7 @@ impl User {
     }
 
     pub fn verify_password(self: &Self, password: &str) -> bool {
-        argon2::verify_encoded(&self.password_hash, password.as_bytes()).is_ok()
+        User::hash_password(&self.name, password) == self.password_hash
     }
 }
 

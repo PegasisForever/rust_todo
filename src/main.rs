@@ -15,6 +15,7 @@ extern crate log;
 extern crate env_logger;
 extern crate uuid;
 extern crate actix_cors;
+extern crate hex;
 
 use std::env;
 use actix_web::{web, App, HttpServer};

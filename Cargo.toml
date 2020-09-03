@@ -1,6 +1,6 @@
 [package]
 name = "rust_todo"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["pegasis <admin@pegasis.site>"]
 edition = "2018"
 
